@@ -1,0 +1,9 @@
+'BoB interpreter code "module"
+
+Sub InitInterpreter
+
+End Sub
+
+Sub TerminateInterpreter
+
+End Sub

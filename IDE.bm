@@ -1,0 +1,13 @@
+'BoB IDE code "module"
+
+Sub InitIDE
+
+End Sub
+
+Sub TerminateIDE
+
+End Sub
+
+Sub RunIDE
+
+end sub

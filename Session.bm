@@ -1,0 +1,9 @@
+'BoB session code "module"
+
+Sub RestoreSession
+
+End Sub
+
+Function SaveSession%%
+    SaveSession = SAVESESSIONSUCCESS
+End Sub

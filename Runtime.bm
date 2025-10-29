@@ -1,0 +1,9 @@
+'BoB IDE code "module"
+
+Sub InitRuntime
+
+End Sub
+
+Sub TerminateRuntime
+
+End Sub
