@@ -44,6 +44,46 @@ Include {filepath | (stringexpr)}
 
 ## Runtime Library (built-in consts, subs and functions)
 
+### Consts
+
+### Subs
+
+### Functions
+
+#### String
+
+```basic
+Mid(s, start [,len])
+Left(s, len)
+Right(s, len)
+Tab(len)
+Reverse(s)
+Trim(s [,trimchars])
+LTrim(s [,trimchars])
+RTrim(s [,trimchars])
+
+```
+
+#### Integer
+
+```basic
+Int(f)
+Abs(n)
+Sgn(n)
+Floor(f)
+Ceil(f)
+Round(f)
+Min(n, n[, n...])
+Max(n, n[, n...])
+Avg(n, n[, n...])
+Sqr(n)
+Mod(n,d)
+```
+
+#### Float
+
+#### Bool
+
 ## Multi-module programming
 
 ## Interfacing external code
