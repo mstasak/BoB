@@ -36,6 +36,8 @@ Sub VTInit
 End Sub
 
 Sub VTTerminate
+    'release all array buffers
+    VTReleaseAll
     Erase VTStore
     VTMaxUsed = -1
 End Sub
@@ -83,6 +85,21 @@ Function VTNewDbl& (n As Double)
     VTStore(slotIx).vType = VT_DBL
     VTStore(slotIx).dblValue = n
     VTNewDbl = VTStore(slotIx).vHandle
+End Function
+
+Function VTNewLongArray& (arr() As Long)
+    Dim slotIx As Long
+    slotIx = VariantNew
+    _Assert slotIx > 0, "Variant creation failed"
+    VTStore(slotIx).vType = VT_LONGARRAY
+    VTStore(slotIx).lbound = LBound(arr)
+    VTStore(slotIx).uBound = UBound(arr)
+    Dim As _MEM m, m2
+    m = _Mem(arr())
+    m2 = _MemNew(m.SIZE)
+    _MemCopy m, m.OFFSET, m.SIZE To m2, m2.OFFSET
+    VTStore(slotIx).arrayMemCopy = m2
+    VTNewLongArray = VTStore(slotIx).vHandle
 End Function
 
 Function VariantNew&
@@ -138,6 +155,25 @@ Function VTSng! (vHandle As Long)
     VTSng = VTStore(vsIndex).sngValue
 End Function
 
+Sub VTGetLongArrayAt (vsIndex As Long, arr() As Long)
+    _Assert vsIndex > 0, "Variant handle not found"
+    Dim vHold As VTHolderStruct
+    vHold = VTStore(vsIndex)
+    _Assert vHold.vType = VT_LONGARRAY, "Variant does not hold a long array"
+    ReDim arr(vHold.lbound To vHold.uBound) As Long
+    Dim m As _MEM
+    m = _Mem(arr())
+    _MemCopy vHold.arrayMemCopy, vHold.arrayMemCopy.OFFSET, vHold.arrayMemCopy.SIZE To m, m.OFFSET
+    _MemFree m
+End Sub
+
+Sub VTGetLongArray (vHandle As Long, arr() As Long)
+    Dim vsIndex As Long
+    vsIndex = VTStoreIndexOf(vHandle)
+    _Assert vsIndex > 0, "Variant handle not found"
+    VTGetLongArrayAt vsIndex, arr()
+End Sub
+
 Function VTypeAt$ (nIndex As Long)
     Select Case VTStore(nIndex).vType
         Case VT_NONE
@@ -152,24 +188,41 @@ Function VTypeAt$ (nIndex As Long)
             VTypeAt = "SINGLE"
         Case VT_DBL
             VTypeAt = "DOUBLE"
+        Case VT_LONGARRAY
+            VTypeAt = "LONG ARRAY"
     End Select
 End Function
 
 Function VStrAt$ (nIndex As Long)
+    Dim s As String
     Select Case VTStore(nIndex).vType
         Case VT_NONE
-            VStrAt = "(null variant)"
+            s = "(null variant)"
         Case VT_STR
-            VStrAt = VTStore(nIndex).strValue
+            s = VTStore(nIndex).strValue
         Case VT_INT
-            VStrAt = Str$(VTStore(nIndex).lngValue And &HFFFF)
+            s = Str$(VTStore(nIndex).lngValue And &HFFFF)
         Case VT_LNG
-            VStrAt = Str$(VTStore(nIndex).lngValue)
+            s = Str$(VTStore(nIndex).lngValue)
         Case VT_SNG
-            VStrAt = Str$(VTStore(nIndex).sngValue)
+            s = Str$(VTStore(nIndex).sngValue)
         Case VT_DBL
-            VStrAt = Str$(VTStore(nIndex).dblValue)
+            s = Str$(VTStore(nIndex).dblValue)
+        Case VT_LONGARRAY
+            ReDim a(0 To 0) As Long
+            Dim sep As String, i As Long
+            sep = "["
+            VTGetLongArrayAt nIndex, a()
+            s = "Long Array(" + Str$(LBound(a)) + " to " + Str$(UBound(a)) + ") = "
+            For i = LBound(a) To UBound(a)
+                if a(i)<>0 then 
+                s = s + sep + Str$(a(i))
+                sep = ","
+                end if
+            Next i
+            s = s + "] (nonzero elements listed)"
     End Select
+    VStrAt = s
 End Function
 
 Function VStr$ (vHandle As Long)
@@ -183,16 +236,31 @@ Sub VTRelease (vHandle As Long)
     Dim vsIndex As Long
     vsIndex = VTStoreIndexOf(vHandle)
     _Assert vsIndex > 0, "Variant handle not found"
+    If VTStore(vsIndex).vHandle <> 0 And VTStore(vsIndex).vType = VT_LONGARRAY Then
+        _MemFree VTStore(vsIndex).arrayMemCopy
+    End If
     VTStore(vsIndex).vHandle = 0
     VTStore(vsIndex).vType = VT_NONE
     VTStore(vsIndex).strValue = ""
     VTReleased = VTReleased + 1
-    'TODO: shrink VTStore 50% if ubound > 10 and less than 40% full
     Dim ub As Long
     ub = UBound(VTStore)
     If ub > 10 And VTMaxUsed - VTReleased < ub * 0.4 Then
         VTCompact ub \ 2
     End If
+End Sub
+
+Sub VTReleaseAll
+    Dim i As Integer
+    For i = 1 To VTMaxUsed
+        If VTStore(i).vHandle <> 0 And VTStore(i).vType = VT_LONGARRAY Then
+            _MemFree VTStore(i).arrayMemCopy
+        End If
+    Next i
+
+    ReDim VTStore(1 To 10) As VTHolderStruct
+    VTMaxUsed = 0
+    VTReleased = 0
 End Sub
 
 Sub VTCompact (newUB As Long)
@@ -221,7 +289,7 @@ Sub VTCompact (newUB As Long)
         VTReleased = 0
     End If
     ReDim _Preserve VTStore(1 To newUB) As VTHolderStruct
-    Print "REDIM PRESERVE VTStore down to "; newUB
+    'Print "REDIM PRESERVE VTStore down to "; newUB
 
 End Sub
 
@@ -237,12 +305,6 @@ Sub VTDump
     Print "Total:"; UBound(VTStore); " VTStore elements,"; VTReleased; " released, max used ="; VTMaxUsed
 End Sub
 
-Sub VTReleaseAll
-    ReDim VTStore(1 To 10) As VTHolderStruct
-    VTMaxUsed = 0
-    VTReleased = 0
-End Sub
-
 Function VTNextVStoreIndex&
     If VTReleased > 0 Then
         VTNextVStoreIndex = VTStoreIndexOf(0)
@@ -251,7 +313,7 @@ Function VTNextVStoreIndex&
     End If
     Do While VTMaxUsed >= UBound(VTStore)
         ReDim _Preserve VTStore(1 To 2 * UBound(VTStore)) As VTHolderStruct
-        Print "REDIM PRESERVE VTStore up to "; 2 * UBound(VTStore)
+        'Print "REDIM PRESERVE VTStore up to "; 2 * UBound(VTStore)
     Loop
     VTMaxUsed = VTMaxUsed + 1
     VTNextVStoreIndex = VTMaxUsed
