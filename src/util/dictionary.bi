@@ -1,8 +1,9 @@
-$Debug
-'Dictionary.bas
-'create and use key-ordered dictionaries
+'$Debug
+Option _Explicit
+'dictionary.bi
+'create and use key-value dictionaries
 'keys may be long or string
-'values may be long, string, or single
+'values may be long or string (long can contain a variant, to store other types)
 
 'ReDim strDictStore(1 To 5, 1 To 10) As String 'array(dictnum, key#, val#)
 'ReDim intDictStore(1 To 5, 1 To 10) As Integer
@@ -10,71 +11,58 @@ $Debug
 'ReDim sngDictStore(1 To 5, 1 To 10) As Single
 
 
+'in dictionary.bm
 
-'d = createDict(KEY_TYPE_STRING, VALUE_TYPE_INTEGER)
-'If Not dictHasStrKey() Then
-'End If
+'procedure names end in two letters indicating the dictionary key and value types
+' L=Long, S=String, A=Any(don't care)
 
-'dictNew
-'dictRelease
-'allDictsRelease
+'function DictNewLL&
+'function DictNewLS&
+'function DictNewSL&
+'function DictNewSS&
+'sub DictFreeLL(d&)
+'sub DictFreeLS(d&)
+'sub DictFreeSL(d&)
+'sub DictFreeSS(d&)
+'sub DictDumpLL(d&)
+'sub DictDumpLS(d&)
+'sub DictDumpSL(d&)
+'sub DictDumpSS(d&)
+'function DictHasKeyAL%%(d&, k&)
+'function DictHasKeyAS%%(d&, k$)
+'function DictGetLL&(d&, k&)
+'function DictGetLS$(d&, k$)
+'function DictGetSL&(d&, k&)
+'function DictGetSS$(d&, k$)
+'sub DictAddLL(d&, v&)
+'sub DictAddLS(d&, v$)
+'sub DictAddSL(d&, v&)
+'sub DictAddSS(d&, v$)
+'sub DictPutLL(d&, v&)
+'sub DictPutLS(d&, v$)
+'sub DictPutSL(d&, v&)
+'sub DictPutSS(d&, v$)
+'sub DictRemoveLL(d&, k&)
+'sub DictRemoveLS(d&, k$)
+'sub DictChangeKeyLA(d&, kOld&, kNew&)
+'sub DictChangeKeySA(d&, kOld$, kNew$)
+'function DictCountAA&(d&)
 
-'dictAdd
-'dictGet
-'dictPut
-'dictHasKey
-'dictLen
-'dictKeys
-'dictValues
-'dictCountOfValue
-'dictKeysForValue
-'dim array
+'<>s TO BE EXPANDED
+'sub DictGetKeys<k>A(d, dynarr())
+'sub DictGetKeys<k>A(d, dynarr())
+'sub DictGetValuesA<v>(d, dynarr())
+'sub DictGetValuesA<v>(d, dynarr())
+'function DictCountOfValueA&<v>(d, v)
+'function DictCountOfValueA&<v>(d, v)
+'sub DictKeysForValue<k><v>(d, v, dynarr())
+'sub DictKeysForValue<k><v>(d, v, dynarr())
+'sub DictKeysForValue<k><v>(d, v, dynarr())
+'sub DictKeysForValue<k><v>(d, v, dynarr())
+'sub DictToArray<k><v>
+'sub DictToArray<k><v>
+'sub DictToArray<k><v>
+'sub DictToArray<k><v>
 
-Option _Explicit
 
-Dim arr%(10)
-arr%(0) = 55
-arr%(1) = 5
-arr%(2) = 7
-arr%(3) = 0
-arr%(4) = 6
-arr%(5) = 1
-arr%(6) = 4
-arr%(7) = 9
-arr%(8) = 2
-arr%(9) = 8
-arr%(10) = -99
-
-printarr arr%()
-sortarr arr%()
-printarr arr%()
-
-End
-
-Sub printarr (a%())
-    Print "Array = [";
-    Dim As Integer i
-    Dim sep As String
-    sep = ""
-    For i = LBound(a%) To UBound(a%)
-        Print sep; LTrim$(Str$(a%(i)));
-        sep = ", "
-    Next i
-    Print "]"
-End Sub
-
-Sub sortarr (b%())
-    Dim i, j As Integer
-    For i = LBound(b%) To UBound(b%) - 1
-        For j = i + i To UBound(b%)
-            If b%(i) > b%(j) Then
-                Swap b%(i), b%(j)
-            End If
-            'If a(i) = 6 Or a(j) = 6 Then
-            '    Print i, j, b(i), b(j)
-            'End If
-        Next j
-        printarr (b%())
-    Next i
-End Sub
 
