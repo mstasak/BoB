@@ -370,15 +370,15 @@ Function VStrAt$ (nIndex As Long)
     VStrAt = s
 End Function
 
-Function CInt64ToByte (n As _Integer64)
+Function CInt64ToByte%% (n As _Integer64)
     CInt64ToByte = n And &HFF
 End Function
 
-Function CInt64ToInteger (n As _Integer64)
+Function CInt64ToInteger% (n As _Integer64)
     CInt64ToInteger = n And &HFFFF
 End Function
 
-Function CInt64ToLong (n As _Integer64)
+Function CInt64ToLong& (n As _Integer64)
     CInt64ToLong = n And &HFFFFFFFF
 End Function
 
