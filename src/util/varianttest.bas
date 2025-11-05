@@ -20,10 +20,10 @@ vDouble = VTNewDbl(Sqr(2.0))
 vLong = VTNewLng(1000000000)
 
 'print them
-Print VStr(vGreeting) + " " + VStr(vName)
-Print "Long = ", VStr(vLong)
-Print "Single = ", VStr(vSingle)
-Print "Double = ", VStr(vDouble)
+Print VTToStr(vGreeting) + " " + VTToStr(vName)
+Print "Long = ", VTToStr(vLong)
+Print "Single = ", VTToStr(vSingle)
+Print "Double = ", VTToStr(vDouble)
 'Print "Long = ", Str$(VTLng(vLong))
 'Print "Single = ", Str$(VTSng(vSingle))
 'Print "Double = ", Str$(VTDbl(vDouble))
@@ -62,7 +62,7 @@ bulksave = VTNewLongArray(bulk())
 'print it
 Print "Bulk original ["
 For i = 1 To 10000
-    If bulk(i) <> 0 Then Print i, bulk(i), VStr(bulk(i))
+    If bulk(i) <> 0 Then Print i, bulk(i), VTToStr(bulk(i))
 Next i
 Print "]"
 
@@ -74,7 +74,7 @@ Next i
 'print it (all zeros, so nothing prints)
 Print "Bulk emptied ["
 For i = 1 To 10000
-    If bulk(i) <> 0 Then Print i, bulk(i), VStr(bulk(i))
+    If bulk(i) <> 0 Then Print i, bulk(i), VTToStr(bulk(i))
 Next i
 Print "]"
 
@@ -89,7 +89,7 @@ VTGetLongArray bulksave, bulk()
 'show restored contents
 Print "Bulk restored ["
 For i = 1 To 10000
-    If bulk(i) <> 0 Then Print i, bulk(i), VStr(bulk(i))
+    If bulk(i) <> 0 Then Print i, bulk(i), VTToStr(bulk(i))
 Next i
 Print "]"
 
@@ -98,7 +98,57 @@ Print "]"
 VTDump
 
 'shut down variant store, releasing all contents and invalidating handles stored in variant variables
+
 VTTerminate
+
+VTInit
+
+Print "String Array test/demo:"
+ReDim fruits(1 To 5) As String
+fruits(1) = "Apple"
+fruits(2) = "Orange"
+fruits(3) = "Papaya"
+fruits(4) = "Lemon"
+fruits(5) = "Loquat"
+
+Dim sep As String
+Print "Fruits = ";
+sep = "["
+For i = LBound(fruits) To UBound(fruits)
+    Print sep; fruits(i);
+    sep = ","
+Next i
+Print "]"
+
+Dim fruitvariant As Long
+fruitvariant = VTNewStringArray(fruits())
+Print "fruitvariant = ", fruitvariant
+For i = 1 To 5
+    fruits(i) = "(deleted)"
+Next i
+
+Print "(deleted)Fruits = ";
+sep = "["
+For i = LBound(fruits) To UBound(fruits)
+    Print sep; fruits(i);
+    Print "]"
+Next i
+VTDump
+
+VTGetStringArray fruitvariant, fruits()
+
+Print "(restored)Fruits = ";
+sep = "["
+For i = LBound(fruits) To UBound(fruits)
+    Print sep; fruits(i);
+    Print "]"
+Next i
+VTDump
+
+VTReleaseAll
+VTDump
+VTTerminate
+
 End
 
 '$Include:'variant.bm'
