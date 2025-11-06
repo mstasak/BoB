@@ -48,7 +48,7 @@ For i = 1 To 9990
 Next i
 
 'list the entire variant collection
-'note the 10000 variants have relocated to the top 40 slots so the
+'note what remains of the 10000 variants have relocated to the top 40 slots so the
 'array can shrink
 VTDump
 'bulk should contain ten elements

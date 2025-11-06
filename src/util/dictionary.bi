@@ -47,12 +47,14 @@ Option _Explicit
 'sub DictChangeKeyLA(d&, kOld&, kNew&)
 'sub DictChangeKeySA(d&, kOld$, kNew$)
 'function DictCountAA&(d&)
+'sub DictGetKeysLA(d&, dynarr&())
+'sub DictGetKeysSA(d&, dynarr$())
+'sub DictGetKeysLA(d&, dynarr&())
+'sub DictGetKeysSA(d&, dynarr$())
+'sub DictGetValuesAL(d&, dynarr&())
+'sub DictGetValuesAS(d&, dynarr$())
 
 '<>s TO BE EXPANDED
-'sub DictGetKeys<k>A(d, dynarr())
-'sub DictGetKeys<k>A(d, dynarr())
-'sub DictGetValuesA<v>(d, dynarr())
-'sub DictGetValuesA<v>(d, dynarr())
 'function DictCountOfValueA&<v>(d, v)
 'function DictCountOfValueA&<v>(d, v)
 'sub DictKeysForValue<k><v>(d, v, dynarr())
