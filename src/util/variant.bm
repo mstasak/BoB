@@ -675,10 +675,10 @@ Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
        VTStore(vsIndex).vType = VT_DOUBLEARRAY Or _
        VTStore(vsIndex).vType = VT_FLOATARRAY Then
         _MemFree VTStore(vsIndex).arrayMemCopy
-    elseif VTStore(vsIndex).vType = VT_STRINGARRAY then
+    ElseIf VTStore(vsIndex).vType = VT_STRINGARRAY Then
         'unlike other array subtypes, stringarray does not keep a _MEM image;
         'instead it allocates a word array using an internal variant (handle in intvalue)
-        VTRelease cint64tolong(VTStore(vsIndex).intvalue)
+        VTRelease CInt64ToLong(VTStore(vsIndex).intValue)
     End If
 
     VTStore(vsIndex).vHandle = 0
