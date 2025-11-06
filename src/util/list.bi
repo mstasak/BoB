@@ -1,4 +1,8 @@
 $Debug
+$Asserts
+Option _Explicit
+
+
 'Dictionary.bas
 'create and use key-ordered dictionaries
 'keys may be long or string
