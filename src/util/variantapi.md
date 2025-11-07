@@ -1,9 +1,10 @@
 # Variant support library API
 
 ## Purpose
+
 variant.bi and variant.bm implement a Variant system in QB64 PE 4.2.0
 
-A variant is a Long handle which holds a key to an array of value holder records.
+A variant is a Long handle which holds a key to an element in an array of value holder records.
 
 A variant may "hold" any of these value types:
 
@@ -31,47 +32,81 @@ Only one-dimension arrays are supported.
 ### Session
 
 - `Sub VTInit` initializes the variant system. Call before creating or using variants.
+
 - `Sub VTTERM` shut down variant system.  Call when finished using variants, to release memory.
+
 - `Sub VTDUMP` print the contents of the variant storage for each variant, list (handle, type, and value).
+  
 ### Creation
 
-- `Function VTNewStr& (s As String)` returns long variant handle, identifying a variant containing the string s.
-- `Function VTNewByte& (n As _Byte)`
-- `Function VTNewInt& (n As Integer)`
-- `Function VTNewLng& (n As Long)`
-- `Function VTNewInt64& (n As _Integer64)`
-- `Function VTNewSng& (n As Single)`
-- `Function VTNewDbl& (n As Double)`
-- `Function VTNewFlt& (n As _Float)`
-- `Function VTNewStringArray& (arr() As String)`
-- `Function VTNewByteArray& (arr() As _Byte)`
-- `Function VTNewIntArray& (arr() As Integer)`
-- `Function VTNewLongArray& (arr() As Long)`
-- `Function VTNewInt64Array& (arr() As _Integer64)`
-- `Function VTNewSingleArray& (arr() As Single)`
-- `Function VTNewDoubleArray& (arr() As Double)`
-- `Function VTNewFloatArray& (arr() As _Float)`
+- `Function VTNewStr& (s As String)` returns Long variant handle, identifying a variant containing the String s.
+
+- `Function VTNewByte& (n As _Byte)` returns Long variant handle, identifying a variant containing the _Byte n.
+
+- `Function VTNewInt& (n As Integer)` returns Long variant handle, identifying a variant containing the Integer n.
+
+- `Function VTNewLng& (n As Long)` returns Long variant handle, identifying a variant containing the Long n.
+
+- `Function VTNewInt64& (n As _Integer64)` returns Long variant handle, identifying a variant containing the _Integer64 n.
+
+- `Function VTNewSng& (n As Single)` returns Long variant handle, identifying a variant containing the Single n.
+
+- `Function VTNewDbl& (n As Double)` returns Long variant handle, identifying a variant containing the Double n.
+
+- `Function VTNewFlt& (n As _Float)` returns Long variant handle, identifying a variant containing the _Float n.
+
+- `Function VTNewStringArray& (arr() As String)` returns Long variant handle, identifying a variant containing the String Array arr().
+
+- `Function VTNewByteArray& (arr() As _Byte)` returns Long variant handle, identifying a variant containing the _Byte arr().
+
+- `Function VTNewIntArray& (arr() As Integer)` returns Long variant handle, identifying a variant containing the Integer Array arr().
+
+- `Function VTNewLongArray& (arr() As Long)` returns Long variant handle, identifying a variant containing the Long Array arr().
+
+- `Function VTNewInt64Array& (arr() As _Integer64)` returns Long variant handle, identifying a variant containing the _Integer64 Array arr().
+
+- `Function VTNewSingleArray& (arr() As Single)` returns Long variant handle, identifying a variant containing the Single Array arr().
+
+- `Function VTNewDoubleArray& (arr() As Double)` returns Long variant handle, identifying a variant containing the Double Array arr().
+
+- `Function VTNewFloatArray& (arr() As _Float)` returns Long variant handle, identifying a variant containing the _Float Array arr().
 
 ### Access
 
 - `Function VTStr$ (vHandle As Long)` Get the value of a String variant.
-- `Function VTByt% (vHandle As Long)`
-- `Function VTInt% (vHandle As Long)`
-- `Function VTLng& (vHandle As Long)`
-- `Function VTInt64&& (vHandle As Long)`
-- `Function VTSng! (vHandle As Long)`
-- `Function VTDbl# (vHandle As Long)`
-- `Function VTFlt## (vHandle As Long)`
-- `Sub VTGetStringArray (vHandle As Long, arr() As String)`
-- `Sub VTGetByteArray (vHandle As Long, arr() As _Byte)`
-- `Sub VTGetIntArray (vHandle As Long, arr() As Integer)`
-- `Sub VTGetLongArray (vHandle As Long, arr() As Long)`
-- `Sub VTGetInt64Array (vHandle As Long, arr() As _Integer64)`
-- `Sub VTGetSingleArray (vHandle As Long, arr() As Single)`
-- `Sub VTGetDoubleArray (vHandle As Long, arr() As Double)`
-- `Sub VTGetFloatArray (vHandle As Long, arr() As _Float)`
+
+- `Function VTByt% (vHandle As Long)` Get the value of a _Byte variant.
+
+- `Function VTInt% (vHandle As Long)` Get the value of an Integer variant.
+
+- `Function VTLng& (vHandle As Long)` Get the value of a Long variant.
+
+- `Function VTInt64&& (vHandle As Long)` Get the value of an _Integer64 variant.
+
+- `Function VTSng! (vHandle As Long)` Get the value of a Single variant.
+
+- `Function VTDbl# (vHandle As Long)` Get the value of a Double variant.
+
+- `Function VTFlt## (vHandle As Long)` Get the value of a _Float variant.
+
+- `Sub VTGetStringArray (vHandle As Long, arr() As String)` Get the value of a String Array variant.
+
+- `Sub VTGetByteArray (vHandle As Long, arr() As _Byte)` Get the value of a _Byte Array variant.
+
+- `Sub VTGetIntArray (vHandle As Long, arr() As Integer)` Get the value of an Integer Array variant.
+
+- `Sub VTGetLongArray (vHandle As Long, arr() As Long)` Get the value of a Long Array variant.
+
+- `Sub VTGetInt64Array (vHandle As Long, arr() As _Integer64)` Get the value of an _Integer64 Array variant.
+
+- `Sub VTGetSingleArray (vHandle As Long, arr() As Single)` Get the value of a Single Array variant.
+
+- `Sub VTGetDoubleArray (vHandle As Long, arr() As Double)` Get the value of a Double Array variant.
+
+- `Sub VTGetFloatArray (vHandle As Long, arr() As _Float)` Get the value of a _Float Array variant.
 
 - `Function VTType$ (vHandle As Long)` Return the type of a variant:  "(NULL)" (probably a VTRelease'd variant) / "STRING" / "BYTE" / "INTEGER" / "LONG" / "INTEGER64" / "SINGLE" / "DOUBLE" / "FLOAT" / "STRING ARRAY" / "BYTE ARRAY" / "INTEGER ARRAY" / "LONG ARRAY" / "INTEGER64 ARRAY" / "SINGLE ARRAY" / "DOUBLE ARRAY" / "FLOAT ARRAY"
+
 - `Function VTToStr$ (vHandle As Long)` - convert value of variant of any typeto a string, i.e. for printing
 
 ### Disposal
@@ -84,14 +119,14 @@ Only one-dimension arrays are supported.
 
 - `Function VariantNew&` create a new raw variant handle, with no type or value assigned
 - `Function VTStoreIndexOf& (vHandle As Long)` find the VTStore index of a variant handle
-- `Sub VTGetStringArrayAt (vsIndex As Long, arr() As String)`
-- `Sub VTGetByteArrayAt (vsIndex As Long, arr() As _Byte)`
-- `Sub VTGetIntArrayAt (vsIndex As Long, arr() As Integer)`
-- `Sub VTGetLongArrayAt (vsIndex As Long, arr() As Long)`
-- `Sub VTGetInt64ArrayAt (vsIndex As Long, arr() As _Integer64)`
-- `Sub VTGetSingleArrayAt (vsIndex As Long, arr() As Single)`
-- `Sub VTGetDoubleArrayAt (vsIndex As Long, arr() As Double)`
-- `Sub VTGetFloatArrayAt (vsIndex As Long, arr() As _Float)`
+- `Sub VTGetStringArrayAt (vsIndex As Long, arr() As String)` helper for VTGetStringArray, without vHandle lookup
+- `Sub VTGetByteArrayAt (vsIndex As Long, arr() As _Byte)` helper for VTGetByteArray, without vHandle lookup
+- `Sub VTGetIntArrayAt (vsIndex As Long, arr() As Integer)` helper for VTGetIntArray, without vHandle lookup
+- `Sub VTGetLongArrayAt (vsIndex As Long, arr() As Long)` helper for VTGetLongArray, without vHandle lookup
+- `Sub VTGetInt64ArrayAt (vsIndex As Long, arr() As _Integer64)` helper for VTGetInt64Array, without vHandle lookup
+- `Sub VTGetSingleArrayAt (vsIndex As Long, arr() As Single)` helper for VTGetSingleArray, without vHandle lookup
+- `Sub VTGetDoubleArrayAt (vsIndex As Long, arr() As Double)` helper for VTGetDoubleArray, without vHandle lookup
+- `Sub VTGetFloatArrayAt (vsIndex As Long, arr() As _Float)` helper for VTGetFloatArray, without vHandle lookup
 - `Function VTTypeAt$ (nIndex As Long)` return the type name of the variant at VTStore slot nIndex.
 - `Function VTToStrAt$ (nIndex As Long)` convert value of any type at VTStore slot to a string, i.e. for printing
 - `Function CInt64ToByte%% (n As _Integer64)` extract low order byte from an _Integer64 value
