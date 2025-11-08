@@ -661,7 +661,7 @@ Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
     If VTStore(vsIndex).vHandle = 0 Then Exit Sub
     'release dependencies from array variant types
     If VTStore(vsIndex).vType = VT_STRINGARRAY Then
-        Dim i As Integer
+        Dim i As Long
         ReDim longarray(1 To 0) As Long
         VTGetLongArray CInt64ToLong(VTStore(vsIndex).intValue), longarray()
         For i = LBound(longarray) To UBound(longarray)
@@ -695,7 +695,7 @@ Sub VTReleaseAt (vsIndex As Long, autoCompact As _Byte)
 End Sub
 
 Sub VTReleaseAll
-    Dim i As Integer
+    Dim i As Long
     For i = 1 To VTMaxUsed
         VTReleaseAt i, _FALSE
     Next i
@@ -731,8 +731,6 @@ Sub VTCompact (newUB As Long)
         VTReleased = 0
     End If
     ReDim _Preserve VTStore(1 To newUB) As VTHolderStruct
-    'Print "REDIM PRESERVE VTStore down to "; newUB
-
 End Sub
 
 Sub VTDump

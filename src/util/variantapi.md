@@ -33,9 +33,9 @@ Only one-dimension arrays are supported.
 
 - `Sub VTInit` initializes the variant system. Call before creating or using variants.
 
-- `Sub VTTERM` shut down variant system.  Call when finished using variants, to release memory.
+- `Sub VTTerm` shut down variant system.  Call when finished using variants, to release memory.
 
-- `Sub VTDUMP` print the contents of the variant storage for each variant, list (handle, type, and value).
+- `Sub VTDump` print the contents of the variant storage for each variant, list (handle, type, and value).
   
 ### Creation
 
@@ -138,10 +138,16 @@ Only one-dimension arrays are supported.
 ## Potential enhancements
 
 - Cache recent vHandle lookups for performance.
-- Use binary search and/or some end-relative search to speed up vHandle lookup (currently a linear search).
+- Use binary search and/or some end-relative search to speed up vHandle lookup (currently a forward linear search - even reverse might be better) (some tradeoffs required, as it would demand a sorted VTStore array by handle).
 - Allow user to turn on and off auto-compaction to prevent slowdown at cost of memory use.
-- Save and recreate multi-dimension arrays (_MEM stores them the same, but does not preserve index count and bounds).
-- Support _Bit values and arrays.
+- Save and recreate multi-dimension arrays (I believe _MEM stores them the same, but does not preserve index count and bounds).
+- Support _Bit values and arrays (IIRC, they're kinda new and incompletely supported, may have to manually pack them into Longs or some such).
 - Add error handling and debugging support.
 - Add logging support.
-- Add VTAssign*Type*>(vHandle, value) Sub family. (an alternative to `VTRelease vHandle : vHandle = VTNew*Type*(value)`)
+- Add `VTAssign<Type>(vHandle, value)` Sub family (or maybe `VTSet<Type>(vHandle, value)`). (an alternative to `VTRelease vHandle : vHandle = VTNew*Type*(value)`)
+- Add some performance workarounds for StringArray to extract a single element without rebuilding the whole array, change a single element, insert or delete an element, or fetch the element count.
+- Change `VTType(vHandle)` to return the numeric type code, and add `VTTypeName$(vHandle)`
+- Add `VTExists%%(vHandle)` to test if a handle is valid
+- Implement optional variant names (VTHolderStruct addition, with access methods mimicing a dictionary keyed by name, holding variant handles: `VTFind(name)`, `VTSetName(vHandle, name)`)
+- Rename internals VT_INTERNAL_xxx to help prevent accidental use
+- Check for publicly visible symbols not beginning with VT (or VT_).
