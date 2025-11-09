@@ -30,13 +30,36 @@ LstDump
 LstDeleteStr flist, 5
 LstDeleteStr flist, 3
 LstDeleteStr flist, 1
-LstInsertStr flist, 3, "Apricots"
-'LstChangeStr flist, 3, "Big Pumpkins"
+LstInsertStr flist, 2, "Apricots"
 LstDump
-VTDump
+LstChangeStr flist, 3, "Big Pumpkins"
+LstDump
 'LstRelease flist
 'VTDump
+
+dim primeList as Long
+primeList = LstNewLng
+LstSetName(PrimeList, "Prime Numbers")
+LstAddLng(primeList, 2)
+LstAddLng(primeList, 3)
+LstAddLng(primeList, 5)
+LstAddLng(primeList, 7)
+LstAddLng(primeList, 11)
+LstAddLng(primeList, 13)
+LstAddLng(primeList, 15)
+LstAddLng(primeList, 17)
+LstAddLng(primeList, 19)
+LstAddLng(primeList, 22)
+LstAddLng(primeList, 29)
+LstDump
+LstDeleteLng(primeList, 7)
+LstChangeLng(primeList, 9,23)
+LstInsertLng(primeList, 1, 1)
+LstDump
+
+VTDump
 LstTerm
+Print "Variant store after LstTerm"
 VTDump
 VTTerminate
 End
