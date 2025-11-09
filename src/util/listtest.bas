@@ -33,6 +33,9 @@ LstDeleteStr flist, 1
 LstInsertStr flist, 2, "Apricots"
 LstDump
 LstChangeStr flist, 3, "Big Pumpkins"
+LstInsertStr flist, 2, "Apricots"
+LstDump
+LstChangeStr flist, 3, "Big Pumpkins"
 LstDump
 'LstRelease flist
 'VTDump
@@ -76,6 +79,7 @@ LstDump
 
 VTDump
 LstTerm
+Print "Variant store after LstTerm"
 Print "Variant store after LstTerm"
 VTDump
 VTTerminate
