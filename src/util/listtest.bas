@@ -30,13 +30,53 @@ LstDump
 LstDeleteStr flist, 5
 LstDeleteStr flist, 3
 LstDeleteStr flist, 1
-LstInsertStr flist, 3, "Apricots"
-'LstChangeStr flist, 3, "Big Pumpkins"
+LstInsertStr flist, 2, "Apricots"
 LstDump
-VTDump
+LstChangeStr flist, 3, "Big Pumpkins"
+LstDump
 'LstRelease flist
 'VTDump
+
+Dim primeList As Long
+primeList = LstNewLng
+LstSetName primeList, "Prime Numbers"
+LstAddLng primeList, 2
+LstAddLng primeList, 3
+LstAddLng primeList, 5
+LstAddLng primeList, 7
+LstAddLng primeList, 11
+LstAddLng primeList, 13
+LstAddLng primeList, 15
+LstAddLng primeList, 17
+LstAddLng primeList, 19
+LstAddLng primeList, 22
+LstAddLng primeList, 29
+LstDump
+LstDeleteLng primeList, 7
+LstDump
+LstChangeLng primeList, 9, 23
+LstDump
+LstInsertLng primeList, 1, 1
+LstDump
+
+Dim sqrList As Long
+sqrList = LstNewDbl
+LstSetName sqrList, "Square Roots"
+Dim i As Integer
+For i = 1 To 20
+    LstAddDbl sqrList, i
+    LstAddDbl sqrList, (i * 1.0#) ^ 0.5
+    LstAddDbl sqrList, Sqr(i * 1.0##)
+    LstAddDbl sqrList, -99
+Next i
+LstDump
+LstSort sqrList, _FALSE
+'LstInsertLng primeList, 1, 1
+LstDump
+
+VTDump
 LstTerm
+Print "Variant store after LstTerm"
 VTDump
 VTTerminate
 End
