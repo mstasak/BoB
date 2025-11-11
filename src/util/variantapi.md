@@ -33,7 +33,7 @@ Only one-dimension arrays are supported.
 
 - `Sub VTInit` initializes the variant system. Call before creating or using variants.
 
-- `Sub VTTerm` shut down variant system.  Call when finished using variants, to release memory.
+- `Sub VTTerminate` shut down variant system.  Call when finished using variants, to release memory.
 
 - `Sub VTDump` print the contents of the variant storage for each variant, list (handle, type, and value).
   

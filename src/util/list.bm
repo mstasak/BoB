@@ -14,7 +14,7 @@ Sub LstInit
     LstReleased = 0
 End Sub
 
-Sub LstTerm
+Sub LstTerminate
     LstReleaseAll
 End Sub
 

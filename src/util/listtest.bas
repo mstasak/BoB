@@ -78,7 +78,7 @@ LstSort sqrList, _FALSE
 LstDump
 
 VTDump
-LstTerm
+LstTerminate
 Print "Variant store after LstTerm"
 Print "Variant store after LstTerm"
 VTDump

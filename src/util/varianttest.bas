@@ -131,8 +131,9 @@ Print "(deleted)Fruits = ";
 sep = "["
 For i = LBound(fruits) To UBound(fruits)
     Print sep; fruits(i);
-    Print "]"
+    sep = ","
 Next i
+Print "]"
 VTDump
 
 VTGetStringArray fruitvariant, fruits()
@@ -141,8 +142,9 @@ Print "(restored)Fruits = ";
 sep = "["
 For i = LBound(fruits) To UBound(fruits)
     Print sep; fruits(i);
-    Print "]"
+    sep = ","
 Next i
+Print "]"
 VTDump
 
 VTReleaseAll
