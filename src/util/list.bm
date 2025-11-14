@@ -124,7 +124,7 @@ Function LstNextStoreIndex&
     If LstReleased > 0 Then
         rslt = LstStoreIndexOf(0)
         _Assert rslt > 0, "Internal error, released list handle search failed."
-        rslt = LstReleased - 1
+        LstReleased = LstReleased - 1
     Else
         Do While LstMaxUsed >= UBound(LstStore)
             ReDim _Preserve LstStore(1 To 2 * UBound(LstStore)) As LstHolderStruct
@@ -273,6 +273,7 @@ Sub LstDeleteStrAt (lstIndex As Long, position As Long, autoCompact As _Byte)
         End If
         _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
     End If
+    _memfree(m)
 End Sub
 
 Sub LstDeleteLngAt (lstIndex As Long, position As Long, autoCompact As _Byte)
@@ -302,6 +303,7 @@ Sub LstDeleteLngAt (lstIndex As Long, position As Long, autoCompact As _Byte)
         End If
         _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
     End If
+    _memfree(m)
 End Sub
 
 Sub LstDeleteDblAt (lstIndex As Long, position As Long, autoCompact As _Byte)
@@ -331,6 +333,7 @@ Sub LstDeleteDblAt (lstIndex As Long, position As Long, autoCompact As _Byte)
         End If
         _MemCopy m, m.OFFSET, m.SIZE To LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET
     End If
+    _memfree(m)
 End Sub
 
 Sub LstChangeStr (lHandle As Long, position As Long, newValue As String)
