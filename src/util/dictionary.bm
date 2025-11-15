@@ -104,7 +104,9 @@ End Sub
 Sub DictReleaseAll
     Dim i As Long
     For i = 1 To DictMaxUsed
-        DictReleaseAt i, _FALSE
+        if DictStore(i).dictHandle <> 0 then
+            DictReleaseAt i, _FALSE
+        end if
     Next i
     ReDim DictStore(1 To 10) As DictHolderStruct
     DictMaxUsed = 0
@@ -417,7 +419,7 @@ Function DictFindKeySAt& (dictIndex As Long, ky As String)
     Dim keys(1 To d.dictLength) As Long 'array of Variant-String
     Dim m As _MEM
     m = _Mem(keys())
-    _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET, d.dictMemKeys.SIZE To m, m.OFFSET
+    _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET, m.SIZE To m, m.OFFSET
     _MemFree m
     Dim As Long rslt, i
     rslt = 0
@@ -437,7 +439,7 @@ Function DictFindKeyLAt& (dictIndex As Long, ky As Long)
     Dim keys(1 To d.dictLength) As Long 'array of Variant-String
     Dim m As _MEM
     m = _Mem(keys())
-    _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET, d.dictMemKeys.SIZE To m, m.OFFSET
+    _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET, m.SIZE To m, m.OFFSET
     _MemFree m
     Dim As Long rslt, i
     rslt = 0
@@ -499,6 +501,22 @@ Sub DictGrowAt (dictIndex As Long)
 
     DictStore(dictIndex).dictAlloc = DictStore(dictIndex).dictAlloc + grow
 End Sub
+
+sub DictDeleteForKeyS(dictHandle As Long, ky as String)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long, position as long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    position = DictFindKeySAt(dictIndex, ky)
+    DictDeleteAt dictIndex, position, _true
+end SUB
+    
+sub DictDeleteForKeyL(dictHandle As Long, ky as Long)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long, position as long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    position = DictFindKeyLAt(dictIndex, ky)
+    DictDeleteAt dictIndex, position, _true
+end SUB
 
 Sub DictDelete (dictHandle As Long, position As Long)
     _Assert dictHandle > 0, "Invalid dictionary handle arguement"
@@ -779,12 +797,13 @@ Function DictToStrAt$ (DictIndex As Long)
     Dim d As DictHolderStruct
     Dim i As Long, sep As String, ky As String, vl As String
     d = DictStore(DictIndex)
-    rslt = "Dictionary" + _STR_CRLF
+    rslt = "Dictionary"
     If d.dictName <> "" Then rslt = rslt + " " + d.dictName
-    sep = " {" + _STR_CRLF
+    rslt = rslt + " = {"
+    sep = _STR_LF + "    "
     For i = 1 To d.dictLength
         If d.dictType = DICT_KSTR_VSTR Or d.dictType = DICT_KSTR_VLNG Or d.dictType = DICT_KSTR_VDBL Then
-            ky = DictStrKeyAt(DictIndex, i)
+            ky = _CHR_QUOTE + DictStrKeyAt(DictIndex, i) + _CHR_QUOTE
         ElseIf d.dictType = DICT_KLNG_VSTR Or d.dictType = DICT_KLNG_VLNG Or d.dictType = DICT_KLNG_VDBL Then
             ky = LTrim$(Str$(DictLngKeyAt(DictIndex, i)))
         End If
@@ -796,9 +815,9 @@ Function DictToStrAt$ (DictIndex As Long)
             vl = LTrim$(Str$(DictDblValueAt(DictIndex, i)))
         End If
         rslt = rslt + sep + ky + " : " + vl
-        sep = "," + _STR_CRLF
+        sep = "," + _STR_LF + "    "
     Next i
-    rslt = rslt + "}"
+    rslt = rslt + _STR_LF + "}"
     DictToStrAt = rslt
 End Function
 
@@ -809,8 +828,10 @@ Sub DictDump
     dCount = 0
     Print String$(80, Chr$(196))
     For i = 1 To DictMaxUsed
-        Print i; " "; DictToStrAt(i)
+        if DictStore(i).dictHandle <> 0 then
+        Print ltrim$(str$(i)); ": "; DictToStrAt(i)
         dCount = dCount + 1
+        endif
     Next i
     Print String$(80, Chr$(205))
     Print String$(50, " "); dCount; " dictionary(s)."

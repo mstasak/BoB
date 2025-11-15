@@ -736,13 +736,15 @@ End Sub
 Sub VTDump
     Dim i As Long
     Print "Variant Store"
-    Print "============="
+    Print String$(80, Chr$(196))
     For i = 1 To VTMaxUsed
         If VTStore(i).vHandle <> 0 Then
             Print Using "####  \          \ &"; i; VTTypeAt(i); VTToStrAt(i)
         End If
     Next i
+    Print String$(80, Chr$(205))
     Print "Total:"; UBound(VTStore); " VTStore elements,"; VTReleased; " released, max used ="; VTMaxUsed
+    Print
 End Sub
 
 Function VTNextVStoreIndex&
