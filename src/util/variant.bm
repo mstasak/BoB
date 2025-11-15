@@ -3,7 +3,7 @@
 
 'Implement a Variant system in QB64 PE 4.2.0
 
-Option _Explicit
+'Option _Explicit
 '$Include: 'variant.bi'
 
 Sub VTInit

@@ -7,7 +7,7 @@ $Debug
 $Asserts
 Option _Explicit
 ''$Include: 'list.bi'
-''$Include: 'variant.bm'
+''$Include: 'variant.bi'
 ''$include: 'dictionary.bi'
 
 Const DICT_NONE = 0
@@ -27,7 +27,7 @@ Type DictHolderStruct
     dictMemKeys As _MEM
     dictMemVals As _MEM
     dictAlloc As Long
-    dictLength As Long 'elements used, from 0..ListAlloc
+    dictLength As Long 'elements used, from 0..dictAlloc
     'dictMaxLength As Long
     dictGrowth As Single '1.0 = 100% - amount to expand when realloc()ing
 End Type
@@ -64,33 +64,32 @@ Sub DictReleaseAt (dictIndex As Long, autoCompact As _Byte)
     dict = DictStore(dictIndex)
     _Assert dict.dictType <> DICT_NONE, "Invalid dictionary type"
     If dict.dictHandle = 0 Or dict.dictType = DICT_NONE Then Exit Sub
+    Dim i As Long
+    Dim m As _MEM, elem As Long
+    If dict.dictType = DICT_KSTR_VSTR Or dict.dictType = DICT_KSTR_VLNG Or dict.dictType = DICT_KSTR_VDBL Then
+        'release key variants
+        m = _Mem(elem)
+        For i = 1 To dict.dictLength
+            _MemCopy dict.dictMemKeys, dict.dictMemKeys.OFFSET + m.SIZE * (i - 1), m.SIZE To m, m.OFFSET
+            VTRelease elem
+        Next i
+        _MemFree m
+    End If
+    If dict.dictType = DICT_KSTR_VSTR Or dict.dictType = DICT_KLNG_VSTR Then
+        'release value variants
+        m = _Mem(elem)
+        For i = 1 To dict.dictLength
+            _MemCopy dict.dictMemVals, dict.dictMemVals.OFFSET + m.SIZE * (i - 1), m.SIZE To m, m.OFFSET
+            VTRelease elem
+        Next i
+        _MemFree m
+    End If
     If _MemExists(dict.dictMemKeys) Then
         _MemFree dict.dictMemKeys
     End If
     If _MemExists(dict.dictMemVals) Then
         _MemFree dict.dictMemVals
     End If
-    ' Select Case DictStore(dictIndex).dictType
-    '     Case DICT_KSTR_VSTR
-    '     Case DICT_KSTR_VLNG
-    '     Case DICT_KSTR_VDBL
-    '     Case DICT_KLNG_VSTR
-    '     Case DICT_KLNG_VLNG
-    '     Case DICT_KLNG_VDBL
-    '     '     Dim i As Long
-    '     '     Dim m As _MEM, elem As Long
-    '     '     m = _Mem(elem)
-    '     '     For i = 1 To LstStore(lstIndex).listLength
-    '     '         _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + _SIZE_OF_LONG * (i - 1), _SIZE_OF_LONG To m, m.OFFSET
-    '     '         VTRelease elem
-    '     '     Next i
-    '     '     _MemFree m
-    '     '     _MemFree LstStore(lstIndex).listMeM
-    '     ' Case LST_LONG
-    '     '     _MemFree LstStore(lstIndex).listMeM
-    '     ' Case LST_DOUBLE
-    '     '     _MemFree LstStore(lstIndex).listMeM
-    ' End Select
     DictStore(dictIndex).dictHandle = 0
     DictStore(dictIndex).dictName = ""
     DictStore(dictIndex).dictType = DICT_NONE
@@ -105,7 +104,7 @@ End Sub
 Sub DictReleaseAll
     Dim i As Long
     For i = 1 To DictMaxUsed
-        DictReleaseAt (i), _FALSE
+        DictReleaseAt i, _FALSE
     Next i
     ReDim DictStore(1 To 10) As DictHolderStruct
     DictMaxUsed = 0
@@ -207,50 +206,208 @@ Sub DictAddKStrVStr (dictHandle As Long, ky As String, vl As String)
     DictAddKStrVStrAt dictIndex, ky, vl
 End Sub
 
-' Sub LstAddLng (lHandle As Long, n As Long)
-'     _Assert lHandle > 0, "Invalid list handle arguement"
-'     Dim lstIndex As Long
-'     lstIndex = LstStoreIndexOf(lHandle)
-'     LstAddLngAt lstIndex, n
-' End Sub
+Sub DictAddKStrVLng (dictHandle As Long, ky As String, vl As Long)
+    _Assert dictHandle > 0, "Invalid list handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictAddKStrVLngAt dictIndex, ky, vl
+End Sub
 
-' Sub LstAddDbl (lHandle As Long, n As Double)
-'     _Assert lHandle > 0, "Invalid list handle arguement"
-'     Dim lstIndex As Long
-'     lstIndex = LstStoreIndexOf(lHandle)
-'     LstAddDblAt lstIndex, n
-' End Sub
+Sub DictAddKStrVDbl (dictHandle As Long, ky As String, vl As Double)
+    _Assert dictHandle > 0, "Invalid list handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictAddKStrVDblAt dictIndex, ky, vl
+End Sub
+
+Sub DictAddKLngVStr (dictHandle As Long, ky As Long, vl As String)
+    _Assert dictHandle > 0, "Invalid list handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictAddKLngVStrAt dictIndex, ky, vl
+End Sub
+
+Sub DictAddKLngVLng (dictHandle As Long, ky As Long, vl As Long)
+    _Assert dictHandle > 0, "Invalid list handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictAddKLngVLngAt dictIndex, ky, vl
+End Sub
+
+Sub DictAddKLngVDbl (dictHandle As Long, ky As Long, vl As Double)
+    _Assert dictHandle > 0, "Invalid list handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictAddKLngVDblAt dictIndex, ky, vl
+End Sub
 
 Sub DictAddKStrVStrAt (dictIndex As Long, ky As String, vl As String)
-    _Assert dictIndex > 0, "List handle not found"
+    Dim m As _MEM, strvar As Long, keyIx As Long
+    _Assert dictIndex > 0, "Dictionary handle not found"
     If dictIndex = 0 Then Exit Sub
-
     'are we adding a new kv pair, or changing an existing kv pair?
-    Dim keyIx As Long
     keyIx = DictFindKeySAt(dictIndex, ky)
-    If keyIx > 0 Then
-        'change value
-    Else
-        'add key and value
+    If keyIx = 0 Then 'add new key
         'grow key and val arrays if needed
         If DictStore(dictIndex).dictLength + 1 > DictStore(dictIndex).dictAlloc Then
             DictGrowAt dictIndex
         End If
         DictStore(dictIndex).dictLength = DictStore(dictIndex).dictLength + 1
         keyIx = DictStore(dictIndex).dictLength
+        'poke in new key
+        strvar = VTNewStr(ky)
+        m = _Mem(strvar)
+        _MemCopy m, m.OFFSET, m.SIZE _ 
+          To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * m.Size
+        _MemFree m
+    Else 'keep old key variant but release the value variant
+        m = _Mem(strvar)
+        _MemCopy DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyix-1) * m.Size, m.SIZE _ 
+        To m, m.OFFSET
+        _MemFree m
+        VTRelease strvar
     End If
-    'poke in new key, value at ends of arrays
-    Dim m As _MEM
-    Dim strvar As Long
-    '!    strvar = VTNewStr(ky)
+    'poke in value
+    strvar = VTNewStr(vl)
     m = _Mem(strvar)
-    _MemCopy m, m.OFFSET, m.SIZE _ 
-      To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * DictStore(dictIndex).dictKeyElemSize
-    '!   strvar = VTNewStr(val)
-    _MemCopy m, m.OFFSET, m.SIZE _ 
-      To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyix-1) * DictStore(dictIndex).dictValElemSize
+    _MemCopy m, m.OFFSET, m.SIZE To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyIx - 1) * m.SIZE
     _MemFree m
-    ' 'update list properties
+End Sub
+
+
+'5 more needed:
+Sub DictAddKStrVLngAt (dictIndex As Long, ky As String, vl As Long)
+    Dim m As _MEM, kyVTHandle As Long, keyIx As Long
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    If dictIndex = 0 Then Exit Sub
+    'are we adding a new kv pair, or changing an existing kv pair?
+    keyIx = DictFindKeySAt(dictIndex, ky)
+    If keyIx = 0 Then 'add new key
+        'grow key and val arrays if needed
+        If DictStore(dictIndex).dictLength + 1 > DictStore(dictIndex).dictAlloc Then
+            DictGrowAt dictIndex
+        End If
+        DictStore(dictIndex).dictLength = DictStore(dictIndex).dictLength + 1
+        keyIx = DictStore(dictIndex).dictLength
+        'poke in new key
+        kyVTHandle = VTNewStr(ky)
+        m = _Mem(kyVTHandle)
+        _MemCopy m, m.OFFSET, m.SIZE _ 
+          To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * m.Size
+        _MemFree m
+    End If
+    'poke in value
+    m = _Mem(vl)
+    _MemCopy m, m.OFFSET, m.SIZE To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyIx - 1) * m.SIZE
+    _MemFree m
+End Sub
+
+Sub DictAddKStrVDblAt (dictIndex As Long, ky As String, vl As Double)
+    Dim m As _MEM, kyVTHandle As Long, keyIx As Long
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    If dictIndex = 0 Then Exit Sub
+    'are we adding a new kv pair, or changing an existing kv pair?
+    keyIx = DictFindKeySAt(dictIndex, ky)
+    If keyIx = 0 Then 'add new key
+        'grow key and val arrays if needed
+        If DictStore(dictIndex).dictLength + 1 > DictStore(dictIndex).dictAlloc Then
+            DictGrowAt dictIndex
+        End If
+        DictStore(dictIndex).dictLength = DictStore(dictIndex).dictLength + 1
+        keyIx = DictStore(dictIndex).dictLength
+        'poke in new key
+        kyVTHandle = VTNewStr(ky)
+        m = _Mem(kyVTHandle)
+        _MemCopy m, m.OFFSET, m.SIZE _ 
+          To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * m.Size
+        _MemFree m
+    End If
+    'poke in value
+    m = _Mem(vl)
+    _MemCopy m, m.OFFSET, m.SIZE To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyIx - 1) * m.SIZE
+    _MemFree m
+End Sub
+
+Sub DictAddKLngVStrAt (dictIndex As Long, ky As Long, vl As String)
+    Dim m As _MEM, strvar As Long, keyIx As Long
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    If dictIndex = 0 Then Exit Sub
+    'are we adding a new kv pair, or changing an existing kv pair?
+    keyIx = DictFindKeyLAt(dictIndex, ky)
+    If keyIx = 0 Then 'add new key
+        'grow key and val arrays if needed
+        If DictStore(dictIndex).dictLength + 1 > DictStore(dictIndex).dictAlloc Then
+            DictGrowAt dictIndex
+        End If
+        DictStore(dictIndex).dictLength = DictStore(dictIndex).dictLength + 1
+        keyIx = DictStore(dictIndex).dictLength
+        'poke in new key
+        m = _Mem(ky)
+        _MemCopy m, m.OFFSET, m.SIZE _ 
+          To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * m.Size
+        _MemFree m
+    Else 'keep old key variant but release the value variant
+        m = _Mem(strvar)
+        _MemCopy DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyix-1) * m.Size, m.SIZE _ 
+        To m, m.OFFSET
+        _MemFree m
+        VTRelease strvar
+    End If
+    'poke in value
+    strvar = VTNewStr(vl)
+    m = _Mem(strvar)
+    _MemCopy m, m.OFFSET, m.SIZE To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyIx - 1) * m.SIZE
+    _MemFree m
+End Sub
+
+Sub DictAddKLngVLngAt (dictIndex As Long, ky As Long, vl As Long)
+    Dim m As _MEM, keyIx As Long
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    If dictIndex = 0 Then Exit Sub
+    'are we adding a new kv pair, or changing an existing kv pair?
+    keyIx = DictFindKeyLAt(dictIndex, ky)
+    If keyIx = 0 Then 'add new key
+        'grow key and val arrays if needed
+        If DictStore(dictIndex).dictLength + 1 > DictStore(dictIndex).dictAlloc Then
+            DictGrowAt dictIndex
+        End If
+        DictStore(dictIndex).dictLength = DictStore(dictIndex).dictLength + 1
+        keyIx = DictStore(dictIndex).dictLength
+        'poke in new key
+        m = _Mem(ky)
+        _MemCopy m, m.OFFSET, m.SIZE _ 
+          To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * m.Size
+        _MemFree m
+    End If
+    'poke in value
+    m = _Mem(vl)
+    _MemCopy m, m.OFFSET, m.SIZE To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyIx - 1) * m.SIZE
+    _MemFree m
+End Sub
+
+Sub DictAddKLngVDblAt (dictIndex As Long, ky As Long, vl As Double)
+    Dim m As _MEM, keyIx As Long
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    If dictIndex = 0 Then Exit Sub
+    'are we adding a new kv pair, or changing an existing kv pair?
+    keyIx = DictFindKeyLAt(dictIndex, ky)
+    If keyIx = 0 Then 'add new key
+        'grow key and val arrays if needed
+        If DictStore(dictIndex).dictLength + 1 > DictStore(dictIndex).dictAlloc Then
+            DictGrowAt dictIndex
+        End If
+        DictStore(dictIndex).dictLength = DictStore(dictIndex).dictLength + 1
+        keyIx = DictStore(dictIndex).dictLength
+        'poke in new key
+        m = _Mem(ky)
+        _MemCopy m, m.OFFSET, m.SIZE _ 
+          To DictStore(dictIndex).dictMemKeys, DictStore(dictIndex).dictMemKeys.OFFSET + (keyix-1) * m.Size
+        _MemFree m
+    End If
+    'poke in value
+    m = _Mem(vl)
+    _MemCopy m, m.OFFSET, m.SIZE To DictStore(dictIndex).dictMemVals, DictStore(dictIndex).dictMemVals.OFFSET + (keyIx - 1) * m.SIZE
+    _MemFree m
 End Sub
 
 Function DictFindKeySAt& (dictIndex As Long, ky As String)
@@ -265,10 +422,10 @@ Function DictFindKeySAt& (dictIndex As Long, ky As String)
     Dim As Long rslt, i
     rslt = 0
     For i = 1 To d.dictLength
-        '!        if VTStr(keys(i)) = key Then
-        rslt = i
-        Exit For
-        '!        endif
+        If VTStr(keys(i)) = ky Then
+            rslt = i
+            Exit For
+        End If
     Next i
     DictFindKeySAt = rslt
 End Function
@@ -363,7 +520,7 @@ Sub DictDeleteAt (dictIndex As Long, position As Long, autoCompact As _Byte)
         _memcopy DictStore(dictIndex).dictMemKeys,DictStore(dictIndex).dictMemKeys.Offset + (position-1) * DictStore(dictIndex).dictKeyElemSize, m.size _ 
           To m, m.offset
         _MemFree m
-        '!VTRelease deleteVt
+        VTRelease deleteVt
         'delete key at position, move rest of array down 1 slot
         If position < DictStore(dictIndex).dictLength Then
             _memcopy DictStore(dictIndex).dictMemKeys, _
@@ -381,7 +538,7 @@ Sub DictDeleteAt (dictIndex As Long, position As Long, autoCompact As _Byte)
                      DictStore(dictIndex).dictValElemSize _
                   To m, m.offset
             _MemFree m
-            '!vtRelease deleteVt
+            VTRelease deleteVt
         End If
 
         'delete value at position, move rest of array down 1 slot
@@ -420,6 +577,28 @@ Sub DictDeleteAt (dictIndex As Long, position As Long, autoCompact As _Byte)
     End If
 End Sub
 
+
+Function DictLookupStrForStr$ (dictHandle As Long, ky As String)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictLookupStrForStr = DictLookupStrForStrAt(dictIndex, ky)
+End Function
+
+Function DictLookupLngForStr& (dictHandle As Long, ky As String)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictLookupLngForStr = DictLookupLngForStrAt(dictIndex, ky)
+End Function
+
+Function DictLookupDblForStr# (dictHandle As Long, ky As String)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictLookupDblForStr = DictLookupDblForStrAt(dictIndex, ky)
+End Function
+
 Function DictLookupStrForLng$ (dictHandle As Long, ky As Long)
     _Assert dictHandle > 0, "Invalid dictionary handle arguement"
     Dim dictIndex As Long
@@ -427,145 +606,133 @@ Function DictLookupStrForLng$ (dictHandle As Long, ky As Long)
     DictLookupStrForLng = DictLookupStrForLngAt(dictIndex, ky)
 End Function
 
-Function DictLookupLngForLng& (dictHandle As Long, ky as Long)
+Function DictLookupLngForLng& (dictHandle As Long, ky As Long)
     _Assert dictHandle > 0, "Invalid dictionary handle arguement"
     Dim dictIndex As Long
     dictIndex = DictStoreIndexOf(dictHandle)
-    DictLookupLngForLng = DictLookupStrForLngAt(dictIndex, ky)
+    DictLookupLngForLng = DictLookupLngForLngAt(dictIndex, ky)
 End Function
 
-Function DictLookupDblForLng# (dictHandle As Long, ky as Long)
+Function DictLookupDblForLng# (dictHandle As Long, ky As Long)
     _Assert dictHandle > 0, "Invalid dictionary handle arguement"
     Dim dictIndex As Long
     dictIndex = DictStoreIndexOf(dictHandle)
-    DictLookupDblForLng = DictLookupStrForLngAt(dictIndex, ky)
+    DictLookupDblForLng = DictLookupDblForLngAt(dictIndex, ky)
 End Function
 
-Function DictLookupStrForStr$ (dictHandle As Long, ky as String)
-    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
-    Dim dictIndex As Long
-    dictIndex = DictStoreIndexOf(dictHandle)
-    DictLookupStrForStr = DictLookupStrForStrAt(dictIndex, ky)
+
+Function DictLookupStrForStrAt$ (dictIndex As Long, ky As String)
+    Dim elIndex As Long
+    elIndex = DictFindKeySAt(dictIndex, ky)
+    DictLookupStrForStrAt = DictStrValueAt(dictIndex, elIndex)
 End Function
 
-Function DictLookupLngForStr& (dictHandle As Long, ky as String)
-    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
-    Dim dictIndex As Long
-    dictIndex = DictStoreIndexOf(dictHandle)
-    DictLookupLngForStr = DictLookupLngForStrAt(dictIndex, ky)
+Function DictLookupLngForStrAt& (dictIndex As Long, ky As String)
+    Dim elIndex As Long
+    elIndex = DictFindKeySAt(dictIndex, ky)
+    DictLookupLngForStrAt = DictLngValueAt(dictIndex, elIndex)
 End Function
 
-Function DictLookupDblForStr# (dictHandle As Long, ky as String)
-    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
-    Dim dictIndex As Long
-    dictIndex = DictStoreIndexOf(dictHandle)
-    DictLookupDblForStr = DictLookupDblForStrAt(dictIndex, ky)
+Function DictLookupDblForStrAt# (dictIndex As Long, ky As String)
+    Dim elIndex As Long
+    elIndex = DictFindKeySAt(dictIndex, ky)
+    DictLookupDblForStrAt = DictDblValueAt(dictIndex, elIndex)
 End Function
 
-Function DictLookupStrForLngAt$(dictIndex as Long, ky as Long)
-    Dim d As DictHolderStruct, rslt as string, m As _MEM, keys(1 To d.dictLength) As Long 'array of Variant-String
+Function DictLookupStrForLngAt$ (dictIndex As Long, ky As Long)
+    Dim elIndex As Long
+    elIndex = DictFindKeyLAt(dictIndex, ky)
+    DictLookupStrForLngAt = DictStrValueAt(dictIndex, elIndex)
+End Function
+
+Function DictLookupLngForLngAt& (dictIndex As Long, ky As Long)
+    Dim elIndex As Long
+    elIndex = DictFindKeyLAt(dictIndex, ky)
+    DictLookupLngForLngAt = DictLngValueAt(dictIndex, elIndex)
+End Function
+
+Function DictLookupDblForLngAt# (dictIndex As Long, ky As Long)
+    Dim elIndex As Long
+    elIndex = DictFindKeyLAt(dictIndex, ky)
+    DictLookupDblForLngAt = DictDblValueAt(dictIndex, elIndex)
+End Function
+
+Function DictStrKeyAt$ (dictIndex As Long, elemIndex As Long)
+    Dim d As DictHolderStruct, m As _MEM, rsltHandle As Long
     d = DictStore(dictIndex)
-    m = _Mem(keys())
-    _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET, d.dictMemKeys.SIZE To m, m.OFFSET
-    _MemFree m
-    Dim As Long ix, i
-    ix = 0
-    For i = 1 To d.dictLength
-        '!        if VTStr(keys(i)) = key Then ix = i: Exit For
-    Next i
-    DictLookupStrForLngAt = DictStrValAt(dictHandle as long, valIndex as Long)
+    If elemIndex <> 0 Then 'fetch value
+        m = _Mem(rsltHandle)
+        _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET + (elemIndex - 1) * d.dictKeyElemSize, d.dictKeyElemSize To m, m.OFFSET
+        _MemFree m
+        DictStrKeyAt = VTStr(rsltHandle)
+    End If
 End Function
 
-Function DictStrValueAt$()
-    dim rslt as string
-    if ix = 0 Then
-        rslt = ""
-    Else 'fetch value
-        dim rsltHandle as Long
-        m = _mem(rsltHandle)
-        _memcopy d.dictMemKeys, d.dictMemKeys.OFFSET + (ix - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
-        memfree m
-        rslt = VTStr(rsltHandle)
-    endif
-    DictStrValueAt = rslt
-end function
+Function DictLngKeyAt& (dictIndex As Long, elemIndex As Long)
+    Dim d As DictHolderStruct, m As _MEM, rslt As Long
+    d = DictStore(dictIndex)
+    If elemIndex <> 0 Then 'fetch value
+        m = _Mem(rslt)
+        _MemCopy d.dictMemKeys, d.dictMemKeys.OFFSET + (elemIndex - 1) * d.dictKeyElemSize, d.dictKeyElemSize To m, m.OFFSET
+        _MemFree m
+        DictLngKeyAt = rslt
+    End If
+End Function
 
-Function DictLngValueAt$()
-    dim rslt as Long
-    if ix = 0 Then
-        rslt = 0&
-    Else 'fetch value
-        m = _mem(rslt)
-        _memcopy d.dictMemKeys, d.dictMemKeys.OFFSET + (ix - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
-        memfree m
-    endif
-    DictStrValueAt = rslt
-end function
+' Function DictDblKeyAt#(dictIndex As Long, elemIndex As Long)
+'     Dim d As DictHolderStruct, m As _MEM, rslt as Double
+'     d = DictStore(dictIndex)
+'     if elemIndex <> 0 Then 'fetch value
+'         m = _mem(rsltHandle)
+'         _memcopy d.dictMemKeys, d.dictMemKeys.OFFSET + (elemIndex - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
+'         memfree m
+'         DictDblKeyAt = rslt
+'     endif
+' end function
 
-Function DictDblValueAt$()
-    dim rslt as Double
-    if ix = 0 Then
-        rslt = 0.0#
-    Else 'fetch value
-        m = _mem(rslt)
-        _memcopy d.dictMemKeys, d.dictMemKeys.OFFSET + (ix - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
-        memfree m
-    endif
-    DictStrValueAt = rslt
-end function
+Function DictStrValueAt$ (dictIndex As Long, elemIndex As Long)
+    Dim d As DictHolderStruct, m As _MEM, rsltHandle As Long 'Variant-String handle
+    d = DictStore(dictIndex)
+    If elemIndex <> 0 Then 'fetch value
+        m = _Mem(rsltHandle)
+        _MemCopy d.dictMemVals, d.dictMemVals.OFFSET + (elemIndex - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
+        _MemFree m
+        DictStrValueAt = VTStr(rsltHandle)
+    End If
+End Function
 
-' Function LstStrAtAtIndex$ (lstIndex As Long, position As Long)
-'     _Assert lstIndex > 0, "List handle not found"
-'     If position < 1 Or position > LstStore(lstIndex).listLength Then
-'         LstStrAtAtIndex = ""
-'         Exit Function
-'     End If
-'     Dim strvar As Long
-'     Dim m As _MEM
-'     m = _Mem(strvar)
-'     _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG, _SIZE_OF_LONG To m, m.OFFSET
-'     _MemFree m
-'     LstStrAtAtIndex = VTStr(strvar)
-' End Function
+Function DictLngValueAt& (dictIndex As Long, elemIndex As Long)
+    Dim d As DictHolderStruct, m As _MEM, rslt As Long
+    d = DictStore(dictIndex)
+    If elemIndex <> 0 Then 'fetch value
+        m = _Mem(rslt)
+        _MemCopy d.dictMemVals, d.dictMemVals.OFFSET + (elemIndex - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
+        _MemFree m
+        DictLngValueAt = rslt
+    End If
+End Function
 
-' Function LstLngAtAtIndex& (lstIndex As Long, position As Long)
-'     _Assert lstIndex > 0, "List handle not found"
-'     If position < 1 Or position > LstStore(lstIndex).listLength Then
-'         LstLngAtAtIndex = 0&
-'         Exit Function
-'     End If
-'     Dim lngvar As Long
-'     Dim m As _MEM
-'     m = _Mem(lngvar)
-'     _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_LONG, _SIZE_OF_LONG To m, m.OFFSET
-'     _MemFree m
-'     LstLngAtAtIndex = lngvar
-' End Function
-
-' Function LstDblAtAtIndex# (lstIndex As Long, position As Long)
-'     _Assert lstIndex > 0, "List handle not found"
-'     If position < 1 Or position > LstStore(lstIndex).listLength Then
-'         LstDblAtAtIndex = 0.0#
-'         Exit Function
-'     End If
-'     Dim dblvar As Double
-'     Dim m As _MEM
-'     m = _Mem(dblvar)
-'     _MemCopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.OFFSET + (position - 1) * _SIZE_OF_DOUBLE, _SIZE_OF_DOUBLE To m, m.OFFSET
-'     _MemFree m
-'     LstDblAtAtIndex = dblvar
-' End Function
+Function DictDblValueAt# (dictIndex As Long, elemIndex As Long)
+    Dim d As DictHolderStruct, m As _MEM, rslt As Double
+    d = DictStore(dictIndex)
+    If elemIndex <> 0 Then 'fetch value
+        m = _Mem(rslt)
+        _MemCopy d.dictMemVals, d.dictMemVals.OFFSET + (elemIndex - 1) * d.dictValElemSize, d.dictValElemSize To m, m.OFFSET
+        _MemFree m
+        DictDblValueAt = rslt
+    End If
+End Function
 
 Function DictCount& (dictHandle As Long)
     _Assert dictHandle > 0, "Invalid dictionary handle arguement"
     Dim dictIndex As Long
     dictIndex = DictStoreIndexOf(dictHandle)
-    LstCount = LstCountAt(lstIndex)
+    DictCount = DictCountAt(dictIndex)
 End Function
 
-Function LstCountAt& (lstIndex As Long)
-    _Assert lstIndex > 0, "List handle not found"
-    LstCountAt = LstStore(lstIndex).listLength
+Function DictCountAt& (dictIndex As Long)
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    DictCountAt = DictStore(dictIndex).dictLength
 End Function
 
 
@@ -575,191 +742,174 @@ Sub DictCompact (newUB As Long) 'size in Long elements
     Dim As Long i, j, newmax
     If DictReleased > 0 Then
         j = 2
-        For i = 1 To LstMaxUsed
-            If LstStore(i).listHandle = 0 Then
+        For i = 1 To DictMaxUsed
+            If DictStore(i).dictHandle = 0 Then
                 If j <= i Then j = i + 1
-                Do While LstStore(j).listHandle = 0 And j < LstMaxUsed
+                Do While DictStore(j).dictHandle = 0 And j < DictMaxUsed
                     j = j + 1
                 Loop
-                If j <= LstMaxUsed Then
-                    LstStore(i) = LstStore(j)
-                    LstStore(j).listHandle = 0
-                    LstStore(j).listType = LST_NONE
-                    LstStore(j).listName = ""
-                    If LstStore(i).listHandle > 0 Then newmax = i
+                If j <= DictMaxUsed Then
+                    DictStore(i) = DictStore(j)
+                    DictStore(j).dictHandle = 0
+                    DictStore(j).dictType = DICT_NONE
+                    DictStore(j).dictName = ""
+                    If DictStore(i).dictHandle > 0 Then newmax = i
                 End If
             Else
                 newmax = i
             End If
         Next i
-        LstMaxUsed = newmax
-        LstReleased = 0
+        DictMaxUsed = newmax
+        DictReleased = 0
     End If
-    ReDim _Preserve LstStore(1 To newUB) As LstHolderStruct
+    ReDim _Preserve DictStore(1 To newUB) As DictHolderStruct
 End Sub
 
 ''' Return a string representation of the list, such as:  ListOfString["apples", "oranges"] or ListOfLong[1,2,4,8]
-Function LstToStr$ (lstHandle As Long)
-    _Assert lstHandle > 0, "Invalid list handle arguement"
-    Dim lstIndex As Long
-    lstIndex = LstStoreIndexOf(lstHandle)
-    LstToStr = LstToStrAt(lstIndex)
+Function DictToStr$ (DictHandle As Long)
+    _Assert DictHandle > 0, "Invalid dictionary handle arguement"
+    Dim DictIndex As Long
+    DictIndex = DictStoreIndexOf(DictHandle)
+    DictToStr = DictToStrAt(DictIndex)
 End Function
 
-Function LstToStrAt$ (lstIndex As Long)
+Function DictToStrAt$ (DictIndex As Long)
     Dim rslt As String
-    _Assert lstIndex > 0, "List handle not found"
-    Dim lst As LstHolderStruct
-    Dim i As Long, sep As String
-    lst = LstStore(lstIndex)
-    Select Case lst.listType
-        Case LST_STRING
-            rslt = "String List"
-            If lst.listName <> "" Then rslt = rslt + " " + lst.listName
-            sep = "["
-            For i = 1 To lst.listLength
-                rslt = rslt + sep + _CHR_QUOTE + LstStrAtAtIndex(lstIndex, i) + _CHR_QUOTE
-                sep = ", "
-            Next i
-            rslt = rslt + "]"
-        Case LST_LONG
-            rslt = "Long List"
-            If lst.listName <> "" Then rslt = rslt + " " + lst.listName
-            sep = "["
-            For i = 1 To lst.listLength
-                rslt = rslt + sep + Str$(LstLngAtAtIndex(lstIndex, i))
-                sep = ", "
-            Next i
-            rslt = rslt + "]"
-        Case LST_DOUBLE
-            rslt = "Double List"
-            If lst.listName <> "" Then rslt = rslt + " " + lst.listName
-            sep = "["
-            For i = 1 To lst.listLength
-                rslt = rslt + sep + Str$(LstDblAtAtIndex(lstIndex, i))
-                sep = ", "
-            Next i
-            rslt = rslt + "]"
-    End Select
-    LstToStrAt = rslt
+    _Assert DictIndex > 0, "Dictionary handle not found"
+    Dim d As DictHolderStruct
+    Dim i As Long, sep As String, ky As String, vl As String
+    d = DictStore(DictIndex)
+    rslt = "Dictionary" + _STR_CRLF
+    If d.dictName <> "" Then rslt = rslt + " " + d.dictName
+    sep = " {" + _STR_CRLF
+    For i = 1 To d.dictLength
+        If d.dictType = DICT_KSTR_VSTR Or d.dictType = DICT_KSTR_VLNG Or d.dictType = DICT_KSTR_VDBL Then
+            ky = DictStrKeyAt(DictIndex, i)
+        ElseIf d.dictType = DICT_KLNG_VSTR Or d.dictType = DICT_KLNG_VLNG Or d.dictType = DICT_KLNG_VDBL Then
+            ky = LTrim$(Str$(DictLngKeyAt(DictIndex, i)))
+        End If
+        If d.dictType = DICT_KSTR_VSTR Or d.dictType = DICT_KLNG_VSTR Then
+            vl = _CHR_QUOTE + DictStrValueAt(DictIndex, i) + _CHR_QUOTE
+        ElseIf d.dictType = DICT_KSTR_VLNG Or d.dictType = DICT_KLNG_VLNG Then
+            vl = LTrim$(Str$(DictLngValueAt(DictIndex, i)))
+        ElseIf d.dictType = DICT_KSTR_VDBL Or d.dictType = DICT_KLNG_VDBL Then
+            vl = LTrim$(Str$(DictDblValueAt(DictIndex, i)))
+        End If
+        rslt = rslt + sep + ky + " : " + vl
+        sep = "," + _STR_CRLF
+    Next i
+    rslt = rslt + "}"
+    DictToStrAt = rslt
 End Function
 
-Sub LstDump
+Sub DictDump
     Dim i As Long
-    Dim listCount As Long
-    Print "List Store"
-    listCount = 0
+    Dim dCount As Long
+    Print "Dictionary Store"
+    dCount = 0
     Print String$(80, Chr$(196))
-    For i = 1 To LstMaxUsed
-        Select Case LstStore(i).listType
-            Case LST_STRING
-                Print i; " "; LstToStrAt(i)
-                listCount = listCount + 1
-            Case LST_LONG
-                Print i; " "; LstToStrAt(i)
-                listCount = listCount + 1
-            Case LST_DOUBLE
-                Print i; " "; LstToStrAt(i)
-                listCount = listCount + 1
-        End Select
+    For i = 1 To DictMaxUsed
+        Print i; " "; DictToStrAt(i)
+        dCount = dCount + 1
     Next i
     Print String$(80, Chr$(205))
-    Print String$(50," "); listCount; " list(s)."
+    Print String$(50, " "); dCount; " dictionary(s)."
     Print
 End Sub
 
-Sub LstSetName (lstHandle As Long, newName As String)
-    _Assert lstHandle > 0, "Invalid list handle arguement"
-    Dim lstIndex As Long
-    lstIndex = LstStoreIndexOf(lstHandle)
-    LstSetNameAt lstIndex, newName
+Sub DictSetName (dictHandle As Long, newName As String)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictSetNameAt dictIndex, newName
 End Sub
 
-Sub LstSetNameAt (lstIndex As Long, newName As String)
-    _Assert lstIndex > 0, "List handle not found"
-    LstStore(lstIndex).listName = newName
+Sub DictSetNameAt (dictIndex As Long, newName As String)
+    _Assert dictIndex > 0, "Dictionary handle not found"
+    DictStore(dictIndex).dictName = newName
 End Sub
 
-Function lstGetName$ (lstHandle As Long)
-    _Assert lstHandle > 0, "Invalid list handle arguement"
-    Dim lstIndex As Long
-    lstIndex = LstStoreIndexOf(lstHandle)
-    lstGetName = lstGetNameAt(lstIndex)
+Function DictGetName$ (dictHandle As Long)
+    _Assert dictHandle > 0, "Invalid dictionary handle arguement"
+    Dim dictIndex As Long
+    dictIndex = DictStoreIndexOf(dictHandle)
+    DictGetName = DictGetNameAt(dictIndex)
 End Function
 
-Function lstGetNameAt$ (lstIndex As Long)
-    _Assert lstIndex > 0, "List handle not found"
-    lstGetNameAt = LstStore(lstIndex).listName
+Function DictGetNameAt$ (DictIndex As Long)
+    _Assert DictIndex > 0, "Dictionary handle not found"
+    DictGetNameAt = DictStore(DictIndex).dictName
 End Function
 
-Sub LstSort (lstHandle As Long, ascending As _Byte)
-    _Assert lstHandle > 0, "Invalid list handle arguement"
-    Dim lstIndex As Long
-    lstIndex = LstStoreIndexOf(lstHandle)
-    LstSortAt lstIndex, ascending
-End Sub
+' Sub LstSort (lstHandle As Long, ascending As _Byte)
+'     _Assert lstHandle > 0, "Invalid list handle arguement"
+'     Dim lstIndex As Long
+'     lstIndex = LstStoreIndexOf(lstHandle)
+'     LstSortAt lstIndex, ascending
+' End Sub
 
-Sub LstSortAt (lstIndex As Long, ascending As _Byte)
-    _Assert lstIndex > 0, "List handle not found"
-    Dim lLen As Long
-    lLen = LstStore(lstIndex).listLength
-    Dim m As _MEM
-    Dim As Long i, j
+' Sub LstSortAt (lstIndex As Long, ascending As _Byte)
+'     _Assert lstIndex > 0, "List handle not found"
+'     Dim lLen As Long
+'     lLen = LstStore(lstIndex).listLength
+'     Dim m As _MEM
+'     Dim As Long i, j
 
-    Select Case LstStore(lstIndex).listType
-        Case LST_STRING
-            ReDim aStrs(1 To lLen) As String
-            ReDim aVars(1 To lLen) As Long
-            m = _Mem(aVars())
-        _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
-            To m, m.offset
-            For i = 1 To lLen
-                aStrs(i) = VTStr(aVars(i))
-            Next i
-            For i = 1 To lLen - 1
-                For j = i + 1 To lLen
-                    If (aStrs(i) < aStrs(j)) Xor (ascending <> 0) Then
-                        Swap aStrs(i), aStrs(j)
-                        Swap aVars(i), aVars(j)
-                    End If
-                Next j
-            Next i
-        _memcopy m, m.offset, m.size TO _
-            LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
-            _MemFree m
-        Case LST_LONG
-            ReDim aLngs(1 To lLen) As Long
-            m = _Mem(aLngs())
-        _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
-            To m, m.offset
-            For i = 1 To lLen - 1
-                For j = i + 1 To lLen
-                    If (aLngs(i) < aLngs(j)) Xor (ascending <> 0) Then
-                        Swap aLngs(i), aLngs(j)
-                    End If
-                Next j
-            Next i
-        _memcopy m, m.offset, m.size TO _
-            LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
-            _MemFree m
-        Case LST_DOUBLE
-            ReDim aDbls(1 To lLen) As Double
-            m = _Mem(aDbls())
-        _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
-            To m, m.offset
-            For i = 1 To lLen - 1
-                For j = i + 1 To lLen
-                    If (aDbls(i) < aDbls(j)) Xor (ascending <> 0) Then
-                        Swap aDbls(i), aDbls(j)
-                    End If
-                Next j
-            Next i
-        _memcopy m, m.offset, m.size TO _
-            LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
-            _MemFree m
-    End Select
-End Sub
+'     Select Case LstStore(lstIndex).listType
+'         Case LST_STRING
+'             ReDim aStrs(1 To lLen) As String
+'             ReDim aVars(1 To lLen) As Long
+'             m = _Mem(aVars())
+'         _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
+'             To m, m.offset
+'             For i = 1 To lLen
+'                 aStrs(i) = VTStr(aVars(i))
+'             Next i
+'             For i = 1 To lLen - 1
+'                 For j = i + 1 To lLen
+'                     If (aStrs(i) < aStrs(j)) Xor (ascending <> 0) Then
+'                         Swap aStrs(i), aStrs(j)
+'                         Swap aVars(i), aVars(j)
+'                     End If
+'                 Next j
+'             Next i
+'         _memcopy m, m.offset, m.size TO _
+'             LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
+'             _MemFree m
+'         Case LST_LONG
+'             ReDim aLngs(1 To lLen) As Long
+'             m = _Mem(aLngs())
+'         _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
+'             To m, m.offset
+'             For i = 1 To lLen - 1
+'                 For j = i + 1 To lLen
+'                     If (aLngs(i) < aLngs(j)) Xor (ascending <> 0) Then
+'                         Swap aLngs(i), aLngs(j)
+'                     End If
+'                 Next j
+'             Next i
+'         _memcopy m, m.offset, m.size TO _
+'             LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
+'             _MemFree m
+'         Case LST_DOUBLE
+'             ReDim aDbls(1 To lLen) As Double
+'             m = _Mem(aDbls())
+'         _memcopy LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset, m.size _
+'             To m, m.offset
+'             For i = 1 To lLen - 1
+'                 For j = i + 1 To lLen
+'                     If (aDbls(i) < aDbls(j)) Xor (ascending <> 0) Then
+'                         Swap aDbls(i), aDbls(j)
+'                     End If
+'                 Next j
+'             Next i
+'         _memcopy m, m.offset, m.size TO _
+'             LstStore(lstIndex).listMeM, LstStore(lstIndex).listMeM.offset
+'             _MemFree m
+'     End Select
+' End Sub
 
+''$Include: 'variant.bm'
 
 
 
